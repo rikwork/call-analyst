@@ -173,6 +173,14 @@ def inspect_python_module(module_path: Path, root_path: Path, rel_name: str) -> 
             "cwd": module_path,
         })
 
+    # 4. Python file and function length metrics (AST-based)
+    runner_script = Path(__file__).resolve()
+    linters.append({
+        "name": f"{rel_name}: code length & metrics",
+        "cmd": [str(sys.executable), str(runner_script), "--check-python-metrics", str(module_path)],
+        "cwd": module_path,
+    })
+
     return linters
 
 
@@ -283,7 +291,59 @@ def run_linter(linter: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
+def check_python_metrics(module_path: Path, max_file_lines: int = 500, max_func_lines: int = 80) -> int:
+    """Check Python file and function lengths using AST."""
+    import ast
+
+    print(f"[METRICS] Scanning Python files in {module_path.name}...")
+    print(f"  Limits: file <= {max_file_lines} lines, function <= {max_func_lines} lines")
+
+    warnings = []
+    scanned_files = 0
+
+    for py_file in sorted(module_path.rglob("*.py")):
+        parts = set(py_file.parts)
+        if ".venv" in parts or "venv" in parts or "__pycache__" in parts or "tests" in parts or "migrations" in parts:
+            continue
+
+        scanned_files += 1
+        try:
+            text = py_file.read_text(encoding="utf-8")
+        except Exception:
+            continue
+
+        lines = len(text.splitlines())
+        rel_path = py_file.relative_to(module_path)
+
+        if lines > max_file_lines:
+            warnings.append(f"  ⚠ File too long: {rel_path} ({lines} lines > {max_file_lines})")
+
+        try:
+            tree = ast.parse(text)
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    func_len = getattr(node, "end_lineno", 0) - node.lineno
+                    if func_len > max_func_lines:
+                        warnings.append(f"  ⚠ Function too long: {rel_path}:{node.name} ({func_len} lines > {max_func_lines})")
+        except Exception:
+            pass
+
+    print(f"Scanned {scanned_files} files.")
+    if warnings:
+        print(f"Found {len(warnings)} metric warning(s):")
+        for w in warnings:
+            print(w)
+    else:
+        print("✔ All Python files and functions are within clean code thresholds.")
+
+    return 0
+
+
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "--check-python-metrics":
+        target = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else Path(".")
+        return check_python_metrics(target)
+
     project_path = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
 
     print(f"\n{'='*64}")

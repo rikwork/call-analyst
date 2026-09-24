@@ -36,6 +36,17 @@ export default tseslint.config(
           ignoreRestSiblings: true,
         },
       ],
+      // File, function length and structural complexity limits
+      'max-lines': [
+        'warn',
+        { max: 400, skipBlankLines: true, skipComments: true },
+      ],
+      'max-lines-per-function': [
+        'warn',
+        { max: 80, skipBlankLines: true, skipComments: true },
+      ],
+      'max-depth': ['warn', 4],
+      'max-params': ['warn', 4],
     },
   },
 )
