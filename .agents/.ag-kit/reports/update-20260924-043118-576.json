@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 1,
+  "runId": "20260924-043118-576",
+  "strategy": "replace",
+  "toolkitVersion": "2026.8.31",
+  "createdAt": "2026-09-24T04:31:18.630Z",
+  "backupDir": "/Users/nikita/projects/call_analyst/.ag-kit-backups/20260924-043118-576",
+  "summary": {
+    "actions": 40,
+    "conflicts": 0,
+    "preserved": 0,
+    "unchanged": 195
+  },
+  "actions": [
+    {
+      "type": "delete",
+      "file": ".gitignore",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "update",
+      "file": "ARCHITECTURE.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "CHANGELOG.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "DEPENDENCY_GRAPH.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "VERSION",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "delete",
+      "file": "agent/code-reviewer.md",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "update",
+      "file": "agent/frontend-specialist.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "agent/orchestrator.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "manifest.json",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "manifest.lock.json",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "rules/code-rules.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "rules/request-routing.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "delete",
+      "file": "scripts/__pycache__/component_registry.cpython-312.pyc",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "delete",
+      "file": "scripts/__pycache__/dependency_graph.cpython-312.pyc",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "delete",
+      "file": "scripts/__pycache__/validate_kit.cpython-312.pyc",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "delete",
+      "file": "scripts/__pycache__/validation_runner.cpython-312.pyc",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "delete",
+      "file": "scripts/tests/__pycache__/test_toolkit.cpython-312.pyc",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "update",
+      "file": "scripts/tests/test_toolkit.py",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "scripts/validate_kit.py",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/app-builder/SKILL.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/app-builder/agent-coordination.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/app-builder/feature-building.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/app-builder/project-detection.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/app-builder/scaffolding.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/app-builder/tech-stack.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/app-builder/templates/express-api/TEMPLATE.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/app-builder/templates/nextjs-fullstack/TEMPLATE.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/app-builder/templates/nextjs-saas/TEMPLATE.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/app-builder/templates/nextjs-static/TEMPLATE.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/clean-code/SKILL.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "update",
+      "file": "skills/code-review-checklist/SKILL.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "delete",
+      "file": "skills/deep-code-review/SKILL.md",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "update",
+      "file": "skills/frontend-architecture/SKILL.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "delete",
+      "file": "skills/geo-fundamentals/scripts/__pycache__/geo_checker.cpython-312.pyc",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "update",
+      "file": "skills/intelligent-routing/SKILL.md",
+      "reason": "replace strategy"
+    },
+    {
+      "type": "delete",
+      "file": "skills/nextjs-react-expert/scripts/__pycache__/react_performance_checker.cpython-312.pyc",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "delete",
+      "file": "skills/performance-profiling/scripts/__pycache__/bundle_analyzer.cpython-312.pyc",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "delete",
+      "file": "skills/vulnerability-scanner/scripts/__pycache__/dependency_analyzer.cpython-312.pyc",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "delete",
+      "file": "skills/vulnerability-scanner/scripts/__pycache__/security_scan.cpython-312.pyc",
+      "reason": "not present in incoming toolkit"
+    },
+    {
+      "type": "delete",
+      "file": "workflows/review.md",
+      "reason": "not present in incoming toolkit"
+    }
+  ],
+  "conflicts": [],
+  "preserved": []
+}

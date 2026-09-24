@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+env/
+ENV/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+.next/
+out/
+
+# Python cache & test artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases and media storage
+*.db
+*.sqlite
+*.sqlite3
+storage/
+
+# AG Kit runtime states and backups
+.ag-kit-backups/
+.agents-boosted-backup/
+.review_state.json
+.agents/.review_state.json
+REVIEW_FIX_LIST.md
+REVIEW_ESCALATION.md
+
+# OS and Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
