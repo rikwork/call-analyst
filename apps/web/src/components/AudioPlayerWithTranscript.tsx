@@ -18,6 +18,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { TranscriptUtterance, SessionNote } from '../types';
+import { formatTime } from '../utils/formatters';
 
 interface AudioPlayerWithTranscriptProps {
   utterances: TranscriptUtterance[];
@@ -112,13 +113,6 @@ export const AudioPlayerWithTranscript: React.FC<AudioPlayerWithTranscriptProps>
   const handleEnded = () => {
     setIsPlaying(false);
     setCurrentTime(0);
-  };
-
-  const formatTime = (secs: number) => {
-    const s = Math.max(0, secs);
-    const m = Math.floor(s / 60);
-    const rem = Math.floor(s % 60);
-    return `${m.toString().padStart(2, '0')}:${rem.toString().padStart(2, '0')}`;
   };
 
   const handleSeek = (time: number) => {

@@ -12,6 +12,7 @@ import {
 import { Client, ConsultationSession } from '../types';
 import { api } from '../api';
 import { ClientDossierView } from '../components/ClientDossierView';
+import { formatExactTime, formatDuration } from '../utils/formatters';
 
 interface ClientDetailPageProps {
   clientId: string;
@@ -57,19 +58,6 @@ export const ClientDetailPage: React.FC<ClientDetailPageProps> = ({
 
     return () => clearInterval(interval);
   }, [clientId]);
-
-  const formatDuration = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m} мин ${s} сек`;
-  };
-
-  const formatExactTime = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const date = d.toLocaleDateString('ru-RU');
-    const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    return `${date} в ${time}`;
-  };
 
   if (isLoading || !client) {
     return (

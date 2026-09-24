@@ -1294,10 +1294,11 @@
         "skills": [
           "code-review-checklist",
           "clean-code",
-          "frontend-design"
+          "frontend-design",
+          "testing-patterns"
         ]
       },
-      "version": "1.0.0"
+      "version": "2.0.0"
     },
     "status": {
       "artifactOutputs": [

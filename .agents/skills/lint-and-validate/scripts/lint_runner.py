@@ -184,6 +184,34 @@ def inspect_python_module(module_path: Path, root_path: Path, rel_name: str) -> 
     return linters
 
 
+def inspect_dry_detector(project_path: Path) -> Optional[Dict[str, Any]]:
+    """Configure jscpd copy/paste detector if npx is available."""
+    if not shutil.which("npx"):
+        return None
+    targets = []
+    if (project_path / "apps").is_dir():
+        targets.append("apps")
+    if (project_path / "services" / "backend" / "app").is_dir():
+        targets.append("services/backend/app")
+    elif (project_path / "services").is_dir():
+        targets.append("services")
+
+    if not targets:
+        return None
+
+    return {
+        "name": "project: DRY copy/paste check (jscpd)",
+        "cmd": [
+            "npx", "--yes", "jscpd", *targets,
+            "--ignore", "**/*.json,**/*.md,**/node_modules/**,**/dist/**,**/.venv/**,**/target/**",
+            "--min-lines", "8",
+            "--min-tokens", "50",
+            "--threshold", "5",
+        ],
+        "cwd": project_path,
+    }
+
+
 def discover_modules(project_path: Path) -> List[Dict[str, Any]]:
     """Discover subprojects / modules within a project or monorepo."""
     modules: List[Dict[str, Any]] = []
@@ -365,6 +393,10 @@ def main() -> int:
             all_linters.extend(inspect_node_module(m["path"], m["name"]))
         elif m["type"] == "python":
             all_linters.extend(inspect_python_module(m["path"], project_path, m["name"]))
+
+    dry_linter = inspect_dry_detector(project_path)
+    if dry_linter:
+        all_linters.append(dry_linter)
 
     if not all_linters:
         print("No linters or compilable targets detected in any module.")

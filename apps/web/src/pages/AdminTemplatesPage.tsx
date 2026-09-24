@@ -14,6 +14,7 @@ import {
 import { AnalysisTemplate, ConsultationSession, Client } from '../types';
 import { api } from '../api';
 import { PromptStudioAdmin } from '../components/PromptStudioAdmin';
+import { formatExactTime, formatDuration } from '../utils/formatters';
 
 interface AdminTemplatesPageProps {
   onSelectSession?: (session: ConsultationSession) => void;
@@ -63,24 +64,6 @@ export const AdminTemplatesPage: React.FC<AdminTemplatesPageProps> = ({ onSelect
 
     return () => clearInterval(interval);
   }, []);
-
-  const formatExactTime = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const date = d.toLocaleDateString('ru-RU');
-    const time = d.toLocaleTimeString('ru-RU', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-    return `${date} в ${time}`;
-  };
-
-  const formatDuration = (secs?: number) => {
-    const s = secs || 120;
-    const m = Math.floor(s / 60);
-    const rem = Math.floor(s % 60);
-    return `${m} мин ${rem} сек`;
-  };
 
   if (isLoading) {
     return (

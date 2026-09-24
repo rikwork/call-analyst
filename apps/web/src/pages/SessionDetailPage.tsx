@@ -11,6 +11,7 @@ import { ConsultationSession } from '../types';
 import { api } from '../api';
 import { AudioPlayerWithTranscript } from '../components/AudioPlayerWithTranscript';
 import { SessionSupervisionCard } from '../components/SessionSupervisionCard';
+import { formatDate, formatDuration } from '../utils/formatters';
 
 interface SessionDetailPageProps {
   sessionId: string;
@@ -74,14 +75,14 @@ export const SessionDetailPage: React.FC<SessionDetailPageProps> = ({
           <div className="flex items-center space-x-2 text-xs text-slate-400 font-mono">
             <span>СЕССИЯ #{session.session_number}</span>
             <span>•</span>
-            <span>{new Date(session.created_at).toLocaleDateString('ru-RU')}</span>
+            <span>{formatDate(session.created_at)}</span>
           </div>
           <h1 className="text-xl font-bold text-slate-900 mt-1">{session.title}</h1>
         </div>
 
         <div className="flex items-center space-x-6 text-xs text-slate-500">
           <div>
-            Длительность: <strong className="text-slate-900">{Math.floor(session.duration_seconds / 60)} мин {Math.floor(session.duration_seconds % 60)} сек</strong>
+            Длительность: <strong className="text-slate-900">{formatDuration(session.duration_seconds)}</strong>
           </div>
           <div>
             Реплик в диалоге: <strong className="text-slate-900">{session.utterances?.length || 0}</strong>

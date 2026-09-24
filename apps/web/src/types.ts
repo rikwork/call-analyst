@@ -17,7 +17,7 @@ export interface ClientDossier {
     precipitating_factors?: string;
     perpetuating_factors?: string;
     protective_factors?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   therapeutic_goals: Array<{
     goal: string;
@@ -164,7 +164,7 @@ export interface AnalysisTemplate {
   system_prompt: string;
   session_analysis_prompt: string;
   longitudinal_prompt: string;
-  extraction_schema: Record<string, any>;
+  extraction_schema: Record<string, unknown>;
   scoring_rubrics: Array<{
     metric: string;
     weight: number;
@@ -176,7 +176,7 @@ export interface LongitudinalAnalysisResult {
   client_id: string;
   client_name: string;
   total_sessions_analyzed: number;
-  case_formulation: Record<string, any>;
+  case_formulation: Record<string, unknown>;
   core_hypotheses: string[];
   therapeutic_progress: Array<{
     milestone: string;
@@ -189,6 +189,6 @@ export interface LongitudinalAnalysisResult {
     clinical_rationale: string;
     evidence_citation: string;
   }>;
-  risk_profile: Record<string, any>;
+  risk_profile: Record<string, unknown>;
   full_supervision_report_markdown: string;
 }

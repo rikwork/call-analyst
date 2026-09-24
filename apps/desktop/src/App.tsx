@@ -17,20 +17,8 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { DualChannelAudioRecorder } from './audioEngine';
-
-interface Client {
-  id: string;
-  first_name: string;
-  last_name: string;
-  modality: string;
-}
-
-interface Note {
-  timestamp: number;
-  timeStr: string;
-  content: string;
-  category: string;
-}
+import { Client, DesktopNote } from './types';
+import { formatTime } from './utils/formatters';
 
 const BACKEND_URL = 'http://127.0.0.1:8000/api/v1';
 
@@ -43,7 +31,7 @@ export function App() {
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [micLevel, setMicLevel] = useState<number>(0);
   const [sysLevel, setSysLevel] = useState<number>(0);
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [notes, setNotes] = useState<DesktopNote[]>([]);
   const [currentNote, setCurrentNote] = useState<string>('');
   const [currentCategory, setCurrentCategory] = useState<string>('observation');
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -51,7 +39,7 @@ export function App() {
   const [finishedSessionId, setFinishedSessionId] = useState<string | null>(null);
 
   const recorderRef = useRef<DualChannelAudioRecorder | null>(null);
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fetch clients on mount
   useEffect(() => {
@@ -65,13 +53,6 @@ export function App() {
       })
       .catch((err) => console.error('Failed to load clients in desktop app:', err));
   }, []);
-
-
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  };
 
   const handleStartRecording = async () => {
     try {
@@ -191,15 +172,11 @@ export function App() {
   };
 
   const handleClose = () => {
-    if ((window as any).electronAPI) {
-      (window as any).electronAPI.closeWindow();
-    }
+    window.electronAPI?.closeWindow();
   };
 
   const handleMinimize = () => {
-    if ((window as any).electronAPI) {
-      (window as any).electronAPI.minimizeWindow();
-    }
+    window.electronAPI?.minimizeWindow();
   };
 
   return (
@@ -208,7 +185,7 @@ export function App() {
       {/* Title Bar (Draggable in Electron) */}
       <div
         className="flex items-center justify-between pb-3 border-b border-slate-800"
-        style={(window as any).electronAPI ? ({ WebkitAppRegion: 'drag' } as any) : undefined}
+        style={window.electronAPI ? ({ WebkitAppRegion: 'drag' } as React.CSSProperties) : undefined}
       >
         <div className="flex items-center space-x-2">
           <div className="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse" />
@@ -219,7 +196,7 @@ export function App() {
 
         <div
           className="flex items-center space-x-1"
-          style={(window as any).electronAPI ? ({ WebkitAppRegion: 'no-drag' } as any) : undefined}
+          style={window.electronAPI ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
         >
           <button
             onClick={handleMinimize}
@@ -239,7 +216,7 @@ export function App() {
       {/* Main Body */}
       <div
         className="flex-1 py-3 space-y-3 overflow-y-auto"
-        style={(window as any).electronAPI ? ({ WebkitAppRegion: 'no-drag' } as any) : undefined}
+        style={window.electronAPI ? ({ WebkitAppRegion: 'no-drag' } as React.CSSProperties) : undefined}
       >
         
         {/* Uploading Status Overlay */}
@@ -420,7 +397,7 @@ export function App() {
 
       {/* Footer Controls */}
       {isRecording && (
-        <div className="pt-3 border-t border-slate-800 flex items-center space-x-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
+        <div className="pt-3 border-t border-slate-800 flex items-center space-x-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <button
             onClick={handlePauseResume}
             className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 flex items-center justify-center space-x-1.5 transition"

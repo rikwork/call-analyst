@@ -127,6 +127,7 @@ flowchart LR
   W_review -.-> S_code_review_checklist
   W_review -.-> S_clean_code
   W_review -.-> S_frontend_design
+  W_review -.-> S_testing_patterns
   W_status --> A_orchestrator
   W_status -.-> S_context_compression
   W_status -.-> S_memory_system

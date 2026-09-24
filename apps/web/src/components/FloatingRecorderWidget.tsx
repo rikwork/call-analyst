@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Client, ConsultationSession, SessionNote } from '../types';
 import { api } from '../api';
+import { formatTime } from '../utils/formatters';
 
 interface FloatingRecorderWidgetProps {
   clients: Client[];
@@ -96,12 +97,6 @@ export const FloatingRecorderWidget: React.FC<FloatingRecorderWidgetProps> = ({
       audioContextRef.current.close().catch(() => {});
       audioContextRef.current = null;
     }
-  };
-
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60);
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   const handleStartRecording = async () => {

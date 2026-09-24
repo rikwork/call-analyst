@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Client, ClientDossier, LongitudinalAnalysisResult } from '../types';
 import { api } from '../api';
+import { formatDate } from '../utils/formatters';
 
 interface ClientDossierViewProps {
   client: Client;
@@ -51,7 +52,7 @@ export const ClientDossierView: React.FC<ClientDossierViewProps> = ({ client, do
               Living Clinical Dossier v{dossier?.version || 1}
             </span>
             <span className="text-xs text-slate-400">
-              Обновлено: {new Date(dossier?.updated_at || Date.now()).toLocaleDateString('ru-RU')}
+              Обновлено: {formatDate(dossier?.updated_at || Date.now())}
             </span>
           </div>
           <h2 className="text-xl font-bold text-slate-900 mt-1">
