@@ -23,7 +23,10 @@ EXIT_CIRCUIT_BREAKER = 3
 EXIT_INCOMPLETE = 4
 EXIT_ERROR = 5
 
-REVIEWERS = ("backend", "frontend", "design")
+REVIEWERS = ("backend", "frontend", "qa", "design")
+STAGE_CODE = ("backend", "frontend")
+STAGE_QA = ("qa",)
+STAGE_DESIGN = ("design",)
 STATE_FILENAME = ".review_state.json"
 
 
@@ -268,45 +271,15 @@ def cmd_record(args: argparse.Namespace) -> int:
     return EXIT_PASSED
 
 
-def cmd_evaluate(args: argparse.Namespace) -> int:
-    project = Path(args.project).resolve()
-    state = load_state(project)
-    if not state:
-        C.error("No active review state found. Run 'init' first.")
-        return EXIT_ERROR
-
-    C.header(f"EVALUATING QUALITY GATE (Iteration {state['iteration']}/{state['max_iterations']})")
-
-    # Check completeness
-    pending = [r for r, v in state["verdicts"].items() if v["verdict"] == "PENDING"]
-    if pending:
-        C.warn(f"Review incomplete! Awaiting verdicts from: {', '.join(pending).upper()}")
-        return EXIT_INCOMPLETE
-
-    all_approved = all(v["verdict"] == "APPROVED" for v in state["verdicts"].values())
-    current_iter = state["iteration"]
-    max_iter = state["max_iterations"]
-
-    if all_approved:
-        state["status"] = "PASSED"
-        save_state(project, state)
-
-        # Generate REVIEW_VERDICT.md
-        report_path = project / "REVIEW_VERDICT.md"
-        _write_verdict_report(report_path, state)
-
-        C.success(f"🎉 QUALITY GATE PASSED! All 3 reviewers ({', '.join(REVIEWERS)}) approved the changes.")
-        C.info(f"Final report generated: {report_path}")
-        return EXIT_PASSED
-
-    # At least one reviewer requested changes
-    all_blockers = []
-    for r, v in state["verdicts"].items():
-        if v["verdict"] == "CHANGES_REQUESTED":
-            for b in v.get("blockers", []):
-                all_blockers.append(f"[{r.upper()}] {b}")
-
-    # Check circuit breaker
+def _handle_rejection(
+    project: Path,
+    state: Dict[str, Any],
+    rejected_stage_name: str,
+    blockers: List[str],
+    current_iter: int,
+    max_iter: int,
+) -> int:
+    """Helper to process changes requested or circuit breaker."""
     if current_iter >= max_iter:
         state["status"] = "CIRCUIT_BREAKER"
         state["history"].append({
@@ -319,9 +292,9 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
         _write_escalation_report(escalation_path, state)
 
         C.header("⚠️ CIRCUIT BREAKER TRIGGERED ⚠️")
-        C.error(f"Maximum review iterations ({max_iter}) reached without full approval.")
-        C.warn(f"Remaining blockers: {len(all_blockers)}")
-        for b in all_blockers:
+        C.error(f"Maximum review iterations ({max_iter}) reached without approval at {rejected_stage_name}.")
+        C.warn(f"Remaining blockers: {len(blockers)}")
+        for b in blockers:
             print(f"   {b}")
         C.info(f"Escalation report generated: {escalation_path}")
         C.info("STOP: Escalate to human user via Socratic decision prompt (ask_question).")
@@ -346,12 +319,84 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
     save_state(project, state)
 
     fix_list_path = project / "REVIEW_FIX_LIST.md"
-    _write_fix_list(fix_list_path, state, current_iter, all_blockers)
+    _write_fix_list(fix_list_path, state, current_iter, blockers)
 
-    C.warn(f"❌ Review iteration {current_iter} rejected with {len(all_blockers)} blocker(s).")
+    C.warn(f"❌ Review iteration {current_iter} rejected at {rejected_stage_name} with {len(blockers)} blocker(s).")
     C.info(f"Fix list written to: {fix_list_path}")
     C.info(f"Advancing to Iteration {state['iteration']} of {max_iter} after fixes are applied.")
     return EXIT_NEED_FIXES
+
+
+def cmd_evaluate(args: argparse.Namespace) -> int:
+    project = Path(args.project).resolve()
+    state = load_state(project)
+    if not state:
+        C.error("No active review state found. Run 'init' first.")
+        return EXIT_ERROR
+
+    current_iter = state["iteration"]
+    max_iter = state["max_iterations"]
+    C.header(f"EVALUATING QUALITY GATE (Iteration {current_iter}/{max_iter})")
+
+    # --- STAGE 2: Code Review (Backend & Frontend) ---
+    stage_code_rejections = [
+        r for r in STAGE_CODE if state["verdicts"].get(r, {}).get("verdict") == "CHANGES_REQUESTED"
+    ]
+    if stage_code_rejections:
+        blockers = []
+        for r in stage_code_rejections:
+            for b in state["verdicts"][r].get("blockers", []):
+                blockers.append(f"[{r.upper()}] {b}")
+        return _handle_rejection(
+            project, state, "Stage 2: Code Review (Backend/Frontend)", blockers, current_iter, max_iter
+        )
+
+    stage_code_pending = [
+        r for r in STAGE_CODE if state["verdicts"].get(r, {}).get("verdict") == "PENDING"
+    ]
+    if stage_code_pending:
+        C.warn(f"Stage 2 (Code Review) incomplete! Awaiting verdicts from: {', '.join(stage_code_pending).upper()}")
+        return EXIT_INCOMPLETE
+
+    # Stage 2 Passed!
+    C.success("✔ Stage 2 (Code Review) PASSED! Backend & Frontend approved.")
+
+    # --- STAGE 3: QA Verification & Visual Capture ---
+    qa_verdict = state["verdicts"].get("qa", {}).get("verdict", "PENDING")
+    if qa_verdict == "CHANGES_REQUESTED":
+        blockers = [f"[QA] {b}" for b in state["verdicts"]["qa"].get("blockers", [])]
+        return _handle_rejection(
+            project, state, "Stage 3: QA Verification", blockers, current_iter, max_iter
+        )
+    elif qa_verdict == "PENDING":
+        C.warn("⏳ Stage 3 (QA Verification) PENDING. Run QA testing and visual capture before Design review.")
+        return EXIT_INCOMPLETE
+
+    # Stage 3 Passed!
+    C.success("✔ Stage 3 (QA Verification) PASSED! Runtime and screenshots confirmed.")
+
+    # --- STAGE 4: Design & Visual UX Review ---
+    design_verdict = state["verdicts"].get("design", {}).get("verdict", "PENDING")
+    if design_verdict == "CHANGES_REQUESTED":
+        blockers = [f"[DESIGN] {b}" for b in state["verdicts"]["design"].get("blockers", [])]
+        return _handle_rejection(
+            project, state, "Stage 4: Design Review", blockers, current_iter, max_iter
+        )
+    elif design_verdict == "PENDING":
+        C.warn("⏳ Stage 4 (Design Review) PENDING. Awaiting Design Reviewer visual evaluation.")
+        return EXIT_INCOMPLETE
+
+    # All Approved!
+    state["status"] = "PASSED"
+    save_state(project, state)
+
+    # Generate REVIEW_VERDICT.md
+    report_path = project / "REVIEW_VERDICT.md"
+    _write_verdict_report(report_path, state)
+
+    C.success(f"🎉 QUALITY GATE PASSED! All 4 stages & reviewers ({', '.join(REVIEWERS)}) approved the changes.")
+    C.info(f"Final report generated: {report_path}")
+    return EXIT_PASSED
 
 
 def cmd_status(args: argparse.Namespace) -> int:
@@ -370,15 +415,28 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"Iteration:        {state['iteration']} / {state['max_iterations']}")
     print(f"Pre-checks:       {state['pre_checks']['status']}")
     print("-" * 64)
-    print("Reviewers:")
-    for r in REVIEWERS:
-        v = state["verdicts"].get(r, {})
+
+    def _render_role(role: str) -> None:
+        v = state["verdicts"].get(role, {})
         verdict = v.get("verdict", "PENDING")
         icon = "✔" if verdict == "APPROVED" else ("❌" if verdict == "CHANGES_REQUESTED" else "⏳")
         blocker_count = len(v.get("blockers", []))
         summary = v.get("summary", "")
         summary_snippet = f" - {summary[:40]}..." if summary else ""
-        print(f"  {icon} {r.upper():<10}: {verdict:<18} (Blockers: {blocker_count}){summary_snippet}")
+        print(f"  {icon} {role.upper():<10}: {verdict:<18} (Blockers: {blocker_count}){summary_snippet}")
+
+    print("Stage 2: Code Review (Backend & Frontend)")
+    for r in STAGE_CODE:
+        _render_role(r)
+
+    print("\nStage 3: QA Verification & Visual Capture")
+    for r in STAGE_QA:
+        _render_role(r)
+
+    print("\nStage 4: Design & Visual UX Review")
+    for r in STAGE_DESIGN:
+        _render_role(r)
+
     print("-" * 64)
     if state["history"]:
         print(f"Previous Iterations Completed: {len(state['history'])}")
@@ -407,6 +465,10 @@ def cmd_reset(args: argparse.Namespace) -> int:
 # --- Report Writers ---
 
 
+def _format_reviewer(role: str) -> str:
+    return "QA Automation" if role == "qa" else role.capitalize()
+
+
 def _write_verdict_report(path: Path, state: Dict[str, Any]) -> None:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     lines = [
@@ -421,7 +483,7 @@ def _write_verdict_report(path: Path, state: Dict[str, Any]) -> None:
     ]
     for r in REVIEWERS:
         v = state["verdicts"][r]
-        lines.append(f"| **{r.capitalize()}** | ✅ APPROVED | {v.get('summary', 'Approved')} |")
+        lines.append(f"| **{_format_reviewer(r)}** | ✅ APPROVED | {v.get('summary', 'Approved')} |")
 
     lines.extend([
         "",
@@ -432,7 +494,7 @@ def _write_verdict_report(path: Path, state: Dict[str, Any]) -> None:
         sugs = state["verdicts"][r].get("suggestions", [])
         if sugs:
             has_suggestions = True
-            lines.append(f"### {r.capitalize()}")
+            lines.append(f"### {_format_reviewer(r)}")
             for s in sugs:
                 lines.append(f"- {s}")
     if not has_suggestions:
@@ -460,8 +522,8 @@ def _write_fix_list(path: Path, state: Dict[str, Any], iter_num: int, blockers: 
     lines.append("\n## Detailed Reviewer Feedback")
     for r in REVIEWERS:
         v = last_verdicts.get(r, {})
-        status_icon = "✅" if v.get("verdict") == "APPROVED" else "❌"
-        lines.append(f"\n### {status_icon} {r.capitalize()} Reviewer ({v.get('verdict', 'PENDING')})")
+        status_icon = "✅" if v.get("verdict") == "APPROVED" else ("❌" if v.get("verdict") == "CHANGES_REQUESTED" else "⏳")
+        lines.append(f"\n### {status_icon} {_format_reviewer(r)} Reviewer ({v.get('verdict', 'PENDING')})")
         if v.get("summary"):
             lines.append(f"**Summary:** {v['summary']}")
         b_list = v.get("blockers", [])
@@ -492,7 +554,7 @@ def _write_escalation_report(path: Path, state: Dict[str, Any]) -> None:
     for r in REVIEWERS:
         v = last_verdicts.get(r, {})
         if v.get("verdict") == "CHANGES_REQUESTED":
-            lines.append(f"### {r.capitalize()} Reviewer")
+            lines.append(f"### {_format_reviewer(r)} Reviewer")
             for b in v.get("blockers", []):
                 lines.append(f"- 🔴 {b}")
             if v.get("summary"):
@@ -530,7 +592,7 @@ def main() -> int:
 
     # record
     p_record = subparsers.add_parser("record", help="Record a reviewer's verdict")
-    p_record.add_argument("--reviewer", required=True, choices=["backend", "frontend", "design"], help="Reviewer role")
+    p_record.add_argument("--reviewer", required=True, choices=["backend", "frontend", "qa", "design"], help="Reviewer role")
     p_record.add_argument("--verdict", required=True, choices=["APPROVED", "CHANGES_REQUESTED"], help="Verdict")
     p_record.add_argument("--summary", required=True, help="Reviewer summary")
     p_record.add_argument("--blocker", action="append", help="Critical blocking issue (can be specified multiple times)")

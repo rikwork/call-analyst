@@ -51,7 +51,7 @@ description: Apply when writing, building, refactoring, or fixing code — proje
 2. PLANNING → `{task-slug}.md`, task breakdown
 3. SOLUTIONING → Architecture, design (NO CODE!)
 4. IMPLEMENTATION → Code + unit/integration tests
-5. QUALITY GATE & REVIEW → Automated pre-checks + 3-Reviewer Subagents (Backend, Frontend, Design) with `review_gate.py`
+5. QUALITY GATE & REVIEW → Automated pre-checks + 4-Stage Quality Gate (Code: Backend & Frontend ➔ QA Automation & Capture ➔ Design Sign-off) with `review_gate.py`
 
 ---
 
@@ -59,16 +59,23 @@ description: Apply when writing, building, refactoring, or fixing code — proje
 
 **Trigger:** After implementation is complete or when `/review` is invoked.
 
-> 🔴 **STRICT EXIT GATE:** No feature, refactor, or complex task can be marked complete without passing the 3-Reviewer Quality Gate (`python .agents/scripts/review_gate.py evaluate`).
+> 🔴 **STRICT EXIT GATE:** No feature, refactor, or complex task can be marked complete without passing the 4-Stage Quality Gate (`python .agents/scripts/review_gate.py evaluate`).
 
 **Execution Protocol:**
-1. **Init & Pre-check:** `python .agents/scripts/review_gate.py init && python .agents/scripts/review_gate.py pre-check`
-2. **Launch 3 Reviewers (Parallel):**
-   - **Backend Reviewer:** API contract, DB queries, security, error handling.
-   - **Frontend Reviewer:** Component hierarchy, state, reactivity, a11y, CWV.
-   - **Design Reviewer:** Design tokens, anti-slop, UX hierarchy, responsive layout.
-3. **Record Verdicts:** Record each reviewer's verdict using `review_gate.py record`.
-4. **Evaluate & Loop:** Run `python .agents/scripts/review_gate.py evaluate`.
+1. **Stage 1 (Pre-check):** `python .agents/scripts/review_gate.py init && python .agents/scripts/review_gate.py pre-check`
+2. **Stage 2 (Code Review - Parallel):**
+   - **Backend Reviewer:** API contracts, DB queries, security, error handling.
+   - **Frontend Reviewer:** Component hierarchy, state, reactivity, clean props.
+   - Record verdicts: `python .agents/scripts/review_gate.py record --reviewer backend ...` / `frontend`.
+   - *Fail-Fast:* If code review fails, halt immediately and fix blockers before QA/Design!
+3. **Stage 3 (QA Verification & Visual Capture):**
+   - **QA Automation:** Run preview server, test suite, and visual capture: `python .agents/scripts/qa_capture.py`.
+   - Record verdict: `python .agents/scripts/review_gate.py record --reviewer qa ...`.
+   - *Fail-Fast:* If QA fails (runtime crashes, broken navigation), halt before Design review!
+4. **Stage 4 (Design & Visual UX Sign-off):**
+   - **Design Reviewer:** Inspect captured screenshots (`desktop_1440.png`, `mobile_375.png`) + `DESIGN.md`.
+   - Record verdict: `python .agents/scripts/review_gate.py record --reviewer design ...`.
+5. **Evaluate & Loop:** Run `python .agents/scripts/review_gate.py evaluate`.
    - **Exit 0 (PASSED):** `REVIEW_VERDICT.md` generated. Task complete.
    - **Exit 2 (NEED_FIXES):** `REVIEW_FIX_LIST.md` generated. Fix blockers and re-review (iteration 2 of 2).
    - **Exit 3 (CIRCUIT_BREAKER):** Max 2 iterations reached. Stop loop, present escalation to user via `ask_question`.

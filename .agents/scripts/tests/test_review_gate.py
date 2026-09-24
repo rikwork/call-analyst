@@ -35,19 +35,31 @@ class TestReviewGate(unittest.TestCase):
         res = self.run_gate("evaluate")
         self.assertEqual(res.returncode, 4)
 
-        # 3. Record Backend
+        # 3. Record Backend (Stage 2)
         res = self.run_gate("record", "--reviewer", "backend", "--verdict", "APPROVED", "--summary", "Backend architecture clean")
         self.assertEqual(res.returncode, 0)
 
-        # 4. Record Frontend
+        # 4. Record Frontend (Stage 2)
         res = self.run_gate("record", "--reviewer", "frontend", "--verdict", "APPROVED", "--summary", "Components performant")
         self.assertEqual(res.returncode, 0)
 
-        # 5. Record Design
+        # Evaluate after Stage 2 -> INCOMPLETE (code 4, QA pending)
+        res = self.run_gate("evaluate")
+        self.assertEqual(res.returncode, 4)
+
+        # 5. Record QA (Stage 3)
+        res = self.run_gate("record", "--reviewer", "qa", "--verdict", "APPROVED", "--summary", "All smoke tests and screenshots verified")
+        self.assertEqual(res.returncode, 0)
+
+        # Evaluate after Stage 3 -> INCOMPLETE (code 4, Design pending)
+        res = self.run_gate("evaluate")
+        self.assertEqual(res.returncode, 4)
+
+        # 6. Record Design (Stage 4)
         res = self.run_gate("record", "--reviewer", "design", "--verdict", "APPROVED", "--summary", "Tokens match design spec")
         self.assertEqual(res.returncode, 0)
 
-        # 6. Evaluate -> PASSED (code 0)
+        # 7. Evaluate -> PASSED (code 0)
         res = self.run_gate("evaluate")
         self.assertEqual(res.returncode, 0)
         self.assertTrue((self.test_dir / "REVIEW_VERDICT.md").is_file())
@@ -56,12 +68,11 @@ class TestReviewGate(unittest.TestCase):
         # 1. Init with max 2 iterations
         self.run_gate("init", "--task-id", "feature-fail", "--max-iterations", "2")
 
-        # Iteration 1: Backend rejects
+        # Iteration 1: Backend rejects in Stage 2 (early exit without QA/Design!)
         self.run_gate("record", "--reviewer", "backend", "--verdict", "CHANGES_REQUESTED", "--summary", "N+1 query found", "--blocker", "Fix SQL query in list_calls")
         self.run_gate("record", "--reviewer", "frontend", "--verdict", "APPROVED", "--summary", "Looks good")
-        self.run_gate("record", "--reviewer", "design", "--verdict", "APPROVED", "--summary", "Tokens correct")
 
-        # Evaluate -> NEED_FIXES (code 2), moves to iteration 2
+        # Evaluate -> NEED_FIXES (code 2), moves to iteration 2 without waiting for QA or Design
         res = self.run_gate("evaluate")
         self.assertEqual(res.returncode, 2)
         self.assertTrue((self.test_dir / "REVIEW_FIX_LIST.md").is_file())
@@ -70,9 +81,10 @@ class TestReviewGate(unittest.TestCase):
             state = json.load(f)
         self.assertEqual(state["iteration"], 2)
 
-        # Iteration 2: Design rejects
+        # Iteration 2: Backend, Frontend, QA approved, Design rejects
         self.run_gate("record", "--reviewer", "backend", "--verdict", "APPROVED", "--summary", "N+1 fixed")
         self.run_gate("record", "--reviewer", "frontend", "--verdict", "APPROVED", "--summary", "Good")
+        self.run_gate("record", "--reviewer", "qa", "--verdict", "APPROVED", "--summary", "QA pass")
         self.run_gate("record", "--reviewer", "design", "--verdict", "CHANGES_REQUESTED", "--summary", "Contrast ratio fails WCAG", "--blocker", "Fix button contrast on dark mode")
 
         # Evaluate -> CIRCUIT_BREAKER (code 3)
@@ -83,6 +95,17 @@ class TestReviewGate(unittest.TestCase):
         with open(self.test_dir / ".agents" / ".review_state.json") as f:
             state = json.load(f)
         self.assertEqual(state["status"], "CIRCUIT_BREAKER")
+
+    def test_qa_failure_halts_before_design(self):
+        self.run_gate("init", "--task-id", "qa-fail-test", "--max-iterations", "2")
+        self.run_gate("record", "--reviewer", "backend", "--verdict", "APPROVED", "--summary", "BE OK")
+        self.run_gate("record", "--reviewer", "frontend", "--verdict", "APPROVED", "--summary", "FE OK")
+        self.run_gate("record", "--reviewer", "qa", "--verdict", "CHANGES_REQUESTED", "--summary", "Server crash", "--blocker", "500 error on /api/calls")
+
+        # Evaluate should trigger NEED_FIXES without needing design
+        res = self.run_gate("evaluate")
+        self.assertEqual(res.returncode, 2)
+        self.assertTrue((self.test_dir / "REVIEW_FIX_LIST.md").is_file())
 
     def test_status_output(self):
         self.run_gate("init", "--task-id", "status-test")
